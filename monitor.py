@@ -9,8 +9,7 @@ import os
 import configparser
 import pyautogui
 import win10toast
-import ctypes
-import tkinter as tk
+from tkinter import *
 from tkinter import messagebox
 import random
 
@@ -71,8 +70,6 @@ class DesktopMonitor:
         """Play the alert sound"""
         pygame.mixer.music.load(str(self.alert_sound_path))
         pygame.mixer.music.play()
-        while pygame.mixer.music.get_busy():
-            time.sleep(1)
         
     def monitor(self):
         """Main monitoring loop"""
@@ -85,42 +82,55 @@ class DesktopMonitor:
         toaster.show_toast("Desktop Monitor", "Will start monitoring in 30 seconds", duration=10)
         time.sleep(30)
         toaster.show_toast("Desktop Monitor", "Started monitoring", duration=10)
+        alert_shown = False  # To track whether the alert has been shown recently
 
         while True:
             try:
                 screen_img = self.capture_screen()
                 image_found = self.find_image(screen_img)
-                
+
                 if not image_found:
-                    print("Target image not found! Playing alert...")
-                    self.play_alert()
+                    if not alert_shown:  # Only show the alert if it hasn't been shown recently
+                        print("Target image not found! Playing alert...")
+                        self.play_alert()
+                        
+                        # Present a popup asking if the user wants to continue
+                        result = self.show_alert()
+                        if result:  # User clicked "Yes"
+                            print("User chose to continue monitoring.")
+                        else:  # User clicked "No"
+                            print("User chose to stop monitoring.")
+                            break
                     
-                    # Present a popup asking if the user wants to continue
-                    result = self.show_alert()
-                    if result:  # User clicked "Yes"
-                        print("User chose to continue monitoring.")
-                        continue
-                    else:  # User clicked "No"
-                        print("User chose to stop monitoring.")
-                        break
+                        alert_shown = True  # Mark alert as shown
+                    else:
+                        print("Skipping alert. Target image not found.")
+                        
                 else:
                     print("Target image found on screen, refreshing")
                     pyautogui.press('f5')  # Press F5 to refresh
-                
-                interval = random.randint(10, 20)
+                    alert_shown = False  # Reset the alert flag since the image was found
+
+                interval = random.randint(10, 20)  # Random interval between checks
                 time.sleep(interval)
-                
+
             except KeyboardInterrupt:
                 print("\nMonitoring stopped by user")
                 break
             except Exception as e:
                 print(f"An error occurred: {e}")
-                time.sleep(30)
+                raise(e)
+    
+    def stop(self):
+        self.root.quit()  # Quit Tkinter when monitoring is stopped
 
     def show_alert(self):
-        root = tk.Tk()
-        root.withdraw()  # Hide the main window
-        result = messagebox.askyesno("Desktop Monitor", "Target image not found! Do you want to continue monitoring?")
+        root = Tk() 
+        root.geometry("600x300") 
+        w = Label(root, text ='Python Auto Refresh', font = "50")  
+        w.pack() 
+        root.withdraw()
+        result = messagebox.askquestion("Desktop Monitor", "Target image not found! Do you want to continue monitoring?")
         root.destroy()
         return result
 
