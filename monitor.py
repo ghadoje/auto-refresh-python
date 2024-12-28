@@ -10,6 +10,9 @@ import configparser
 import pyautogui
 import win10toast
 import ctypes
+import tkinter as tk
+from tkinter import messagebox
+import random
 
 class DesktopMonitor:
     def __init__(self):
@@ -68,6 +71,8 @@ class DesktopMonitor:
         """Play the alert sound"""
         pygame.mixer.music.load(str(self.alert_sound_path))
         pygame.mixer.music.play()
+        while pygame.mixer.music.get_busy():
+            time.sleep(1)
         
     def monitor(self):
         """Main monitoring loop"""
@@ -79,7 +84,8 @@ class DesktopMonitor:
         toaster = win10toast.ToastNotifier()
         toaster.show_toast("Desktop Monitor", "Will start monitoring in 30 seconds", duration=10)
         time.sleep(30)
-        
+        toaster.show_toast("Desktop Monitor", "Started monitoring", duration=10)
+
         while True:
             try:
                 screen_img = self.capture_screen()
@@ -90,8 +96,8 @@ class DesktopMonitor:
                     self.play_alert()
                     
                     # Present a popup asking if the user wants to continue
-                    result = ctypes.windll.user32.MessageBoxW(0, "Target image not found! Do you want to continue monitoring?", "Desktop Monitor", 1)
-                    if result == 1:  # User clicked "Yes"
+                    result = self.show_alert()
+                    if result:  # User clicked "Yes"
                         print("User chose to continue monitoring.")
                         continue
                     else:  # User clicked "No"
@@ -100,7 +106,8 @@ class DesktopMonitor:
                 else:
                     print("Target image found on screen, refreshing")
                     pyautogui.press('f5')  # Press F5 to refresh
-                    
+                
+                interval = random.randint(10, 20)
                 time.sleep(interval)
                 
             except KeyboardInterrupt:
@@ -108,7 +115,14 @@ class DesktopMonitor:
                 break
             except Exception as e:
                 print(f"An error occurred: {e}")
-                time.sleep(interval)
+                time.sleep(30)
+
+    def show_alert(self):
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+        result = messagebox.askyesno("Desktop Monitor", "Target image not found! Do you want to continue monitoring?")
+        root.destroy()
+        return result
 
 if __name__ == "__main__":
     try:
