@@ -21,7 +21,6 @@ build/
 
 # Project specific
 *.png
-*.mp3
 *.log
 
 # Config file (if you don't want to share your specific configuration)
