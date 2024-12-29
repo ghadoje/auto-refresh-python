@@ -47,6 +47,15 @@ def show_alert():
     return result == QMessageBox.StandardButton.Yes
 
 
+def show_toast_notification(message):
+    toast = Notification(
+        app_id="Auto Refresh",
+        title="Auto Refresh",
+        msg=message
+    )
+    toast.show()
+
+
 class DesktopMonitor:
     def __init__(self):
         # Initialize pygame mixer for audio playback
@@ -94,10 +103,7 @@ class DesktopMonitor:
         print(f"Will check every 10 to 20 seconds")
         
         # Notify user and wait for 30 seconds before starting
-        toast = Notification(app_id="Auto Refresh",
-                             title="Winotify Test Toast",
-                             msg="Will start monitoring in 30 seconds")
-        toast.show()
+        show_toast_notification("Will start monitoring in 30 seconds")
         time.sleep(30)
 
         while True:
@@ -113,6 +119,10 @@ class DesktopMonitor:
                     result = show_alert()
                     if result:  # User clicked "Yes"
                         print("User chose to continue monitoring.")
+                        # Notify user and wait for 30 seconds before starting
+                        show_toast_notification("Will start monitoring again in 30 seconds")
+                        time.sleep(30)
+
                     else:  # User clicked "No"
                         print("User chose to stop monitoring.")
                         break
@@ -121,7 +131,11 @@ class DesktopMonitor:
                     print("Target image found on screen, refreshing")
                     pyautogui.press('f5')  # Press F5 to refresh
 
-                interval = random.randint(10, 20)  # Random interval between checks
+                average_wait_seconds = int(self.config['Settings']['check_interval'])
+                min_value = int(average_wait_seconds * 0.7)
+                max_value = int(average_wait_seconds * 1.3)
+                interval = random.randint(min_value, max_value)  # Random interval between checks
+                print(f"Waiting for {interval} seconds")
                 time.sleep(interval)
 
             except KeyboardInterrupt:
