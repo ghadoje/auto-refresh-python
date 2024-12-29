@@ -8,10 +8,44 @@ from pathlib import Path
 import os
 import configparser
 import pyautogui
-import win10toast
-from tkinter import *
-from tkinter import messagebox
+from winotify import Notification
+from PyQt6.QtWidgets import QApplication, QMessageBox
+import sys
 import random
+
+def stop_music():
+    """Stop the alert sound"""
+    pygame.mixer.music.stop()
+
+def load_config():
+    """Load configuration from config.ini"""
+    config = configparser.ConfigParser()
+    config_path = Path(__file__).parent / 'config.ini'
+
+    if not config_path.exists():
+        raise FileNotFoundError(f"Configuration file not found at {config_path}")
+
+    config.read(config_path)
+    return config
+
+def capture_screen():
+    """Capture the entire screen and convert to CV2 format"""
+    screenshot = ImageGrab.grab()
+    opencv_img = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+    return opencv_img
+
+def show_alert():
+    app = QApplication.instance() or QApplication(sys.argv)
+
+    msg = QMessageBox()
+    msg.setWindowTitle("Desktop Monitor")
+    msg.setText("Target image not found! Do you want to continue monitoring?")
+    msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+    result = msg.exec()
+    if result:
+        stop_music()
+    return result == QMessageBox.StandardButton.Yes
+
 
 class DesktopMonitor:
     def __init__(self):
@@ -19,7 +53,7 @@ class DesktopMonitor:
         pygame.mixer.init()
         
         # Load configuration
-        self.config = self.load_config()
+        self.config = load_config()
         
         # Set up paths
         self.project_dir = Path(__file__).parent
@@ -38,24 +72,7 @@ class DesktopMonitor:
         # Initialize Tesseract
         if os.name == 'nt':  # Windows
             pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-    
-    def load_config(self):
-        """Load configuration from config.ini"""
-        config = configparser.ConfigParser()
-        config_path = Path(__file__).parent / 'config.ini'
-        
-        if not config_path.exists():
-            raise FileNotFoundError(f"Configuration file not found at {config_path}")
-        
-        config.read(config_path)
-        return config
-    
-    def capture_screen(self):
-        """Capture the entire screen and convert to CV2 format"""
-        screenshot = ImageGrab.grab()
-        opencv_img = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-        return opencv_img
-    
+
     def find_image(self, screen_img):
         """Try to find the reference image in the screenshot"""
         # Use template matching to find the image
@@ -66,50 +83,43 @@ class DesktopMonitor:
         threshold = float(self.config['Settings']['match_threshold'])
         return max_val > threshold
     
-    def play_alert(self):
+    def play_music(self):
         """Play the alert sound"""
         pygame.mixer.music.load(str(self.alert_sound_path))
         pygame.mixer.music.play()
-        
+
     def monitor(self):
         """Main monitoring loop"""
-        interval = int(self.config['Settings']['check_interval'])
         print(f"Starting desktop monitoring. Looking for image: {self.target_image_path}")
-        print(f"Will check every {interval} seconds")
+        print(f"Will check every 10 to 20 seconds")
         
         # Notify user and wait for 30 seconds before starting
-        toaster = win10toast.ToastNotifier()
-        toaster.show_toast("Desktop Monitor", "Will start monitoring in 30 seconds", duration=10)
+        toast = Notification(app_id="Auto Refresh",
+                             title="Winotify Test Toast",
+                             msg="Will start monitoring in 30 seconds")
+        toast.show()
         time.sleep(30)
-        toaster.show_toast("Desktop Monitor", "Started monitoring", duration=10)
-        alert_shown = False  # To track whether the alert has been shown recently
 
         while True:
             try:
-                screen_img = self.capture_screen()
+                screen_img = capture_screen()
                 image_found = self.find_image(screen_img)
 
                 if not image_found:
-                    if not alert_shown:  # Only show the alert if it hasn't been shown recently
-                        print("Target image not found! Playing alert...")
-                        self.play_alert()
-                        
-                        # Present a popup asking if the user wants to continue
-                        result = self.show_alert()
-                        if result:  # User clicked "Yes"
-                            print("User chose to continue monitoring.")
-                        else:  # User clicked "No"
-                            print("User chose to stop monitoring.")
-                            break
-                    
-                        alert_shown = True  # Mark alert as shown
-                    else:
-                        print("Skipping alert. Target image not found.")
-                        
+                    print("Target image not found! Playing alert...")
+                    self.play_music()
+
+                    # Present a popup asking if the user wants to continue
+                    result = show_alert()
+                    if result:  # User clicked "Yes"
+                        print("User chose to continue monitoring.")
+                    else:  # User clicked "No"
+                        print("User chose to stop monitoring.")
+                        break
+
                 else:
                     print("Target image found on screen, refreshing")
                     pyautogui.press('f5')  # Press F5 to refresh
-                    alert_shown = False  # Reset the alert flag since the image was found
 
                 interval = random.randint(10, 20)  # Random interval between checks
                 time.sleep(interval)
@@ -117,22 +127,9 @@ class DesktopMonitor:
             except KeyboardInterrupt:
                 print("\nMonitoring stopped by user")
                 break
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                raise(e)
-    
-    def stop(self):
-        self.root.quit()  # Quit Tkinter when monitoring is stopped
-
-    def show_alert(self):
-        root = Tk() 
-        root.geometry("600x300") 
-        w = Label(root, text ='Python Auto Refresh', font = "50")  
-        w.pack() 
-        root.withdraw()
-        result = messagebox.askquestion("Desktop Monitor", "Target image not found! Do you want to continue monitoring?")
-        root.destroy()
-        return result
+            except Exception as exception:
+                print(f"An error occurred: {exception}")
+                raise exception
 
 if __name__ == "__main__":
     try:
