@@ -8,7 +8,7 @@ from pathlib import Path
 import os
 import configparser
 import pyautogui
-from winotify import Notification
+from winotify import Notification, audio
 from PyQt6.QtWidgets import QApplication, QMessageBox
 import sys
 import random
@@ -53,6 +53,7 @@ def show_toast_notification(message):
         title="Auto Refresh",
         msg=message
     )
+    toast.set_audio(audio.Reminder, loop=False)
     toast.show()
 
 
