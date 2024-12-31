@@ -8,7 +8,7 @@ from pathlib import Path
 import os
 import configparser
 import pyautogui
-from winotify import Notification
+from winotify import Notification, audio
 from PyQt6.QtWidgets import QApplication, QMessageBox
 import sys
 import random
@@ -41,10 +41,16 @@ def show_alert():
     msg.setWindowTitle("Desktop Monitor")
     msg.setText("Target image not found! Do you want to continue monitoring?")
     msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+
+    # Show Stop Music only if Music is playing
+    if pygame.mixer.music.get_busy():
+        msg.addButton("Stop Music", QMessageBox.ButtonRole.ActionRole)
     result = msg.exec()
-    if result:
+    if pygame.mixer.music.get_busy():
         stop_music()
-    return result == QMessageBox.StandardButton.Yes
+    elif result == QMessageBox.StandardButton.No or result == QMessageBox.StandardButton.Yes:
+        return result
+    return show_alert()
 
 
 def show_toast_notification(message):
@@ -53,6 +59,7 @@ def show_toast_notification(message):
         title="Auto Refresh",
         msg=message
     )
+    toast.set_audio(audio.Reminder, loop=False)
     toast.show()
 
 
@@ -117,13 +124,12 @@ class DesktopMonitor:
 
                     # Present a popup asking if the user wants to continue
                     result = show_alert()
-                    if result:  # User clicked "Yes"
+                    if result == QMessageBox.StandardButton.Yes:  # User clicked "Yes"
                         print("User chose to continue monitoring.")
                         # Notify user and wait for 30 seconds before starting
                         show_toast_notification("Will start monitoring again in 30 seconds")
                         time.sleep(30)
-
-                    else:  # User clicked "No"
+                    if result == QMessageBox.StandardButton.No:  # User clicked "No"
                         print("User chose to stop monitoring.")
                         break
 
