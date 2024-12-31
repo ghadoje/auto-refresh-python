@@ -9,7 +9,7 @@ import os
 import configparser
 import pyautogui
 from winotify import Notification, audio
-from PyQt6.QtWidgets import QApplication, QMessageBox, QPushButton
+from PyQt6.QtWidgets import QApplication, QMessageBox
 import sys
 import random
 
