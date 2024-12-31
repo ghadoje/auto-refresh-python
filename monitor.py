@@ -48,7 +48,7 @@ def show_alert():
     result = msg.exec()
     if pygame.mixer.music.get_busy():
         stop_music()
-    elif result == QMessageBox.StandardButton.No or result == QMessageBox.StandardButton.Yes:
+    if result == QMessageBox.StandardButton.No or result == QMessageBox.StandardButton.Yes:
         return result
     return show_alert()
 
