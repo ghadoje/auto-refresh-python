@@ -12,6 +12,10 @@ from winotify import Notification, audio
 from PyQt6.QtWidgets import QApplication, QMessageBox
 import sys
 import random
+import time
+
+def print_line(message):
+    print(time.strftime(f"%Y-%m-%d %H:%M:%S :: {message}"))
 
 def stop_music():
     """Stop the alert sound"""
@@ -106,8 +110,8 @@ class DesktopMonitor:
 
     def monitor(self):
         """Main monitoring loop"""
-        print(f"Starting desktop monitoring. Looking for image: {self.target_image_path}")
-        print(f"Will check every 10 to 20 seconds")
+        print_line(f"Starting desktop monitoring. Looking for image: {self.target_image_path}")
+        print_line(f"Will check every 10 to 20 seconds")
         
         # Notify user and wait for 30 seconds before starting
         show_toast_notification("Will start monitoring in 30 seconds")
@@ -119,36 +123,36 @@ class DesktopMonitor:
                 image_found = self.find_image(screen_img)
 
                 if not image_found:
-                    print("Target image not found! Playing alert...")
+                    print_line("Target image not found! Playing alert...")
                     self.play_music()
 
                     # Present a popup asking if the user wants to continue
                     result = show_alert()
                     if result == QMessageBox.StandardButton.Yes:  # User clicked "Yes"
-                        print("User chose to continue monitoring.")
+                        print_line("User chose to continue monitoring.")
                         # Notify user and wait for 30 seconds before starting
                         show_toast_notification("Will start monitoring again in 30 seconds")
                         time.sleep(30)
                     if result == QMessageBox.StandardButton.No:  # User clicked "No"
-                        print("User chose to stop monitoring.")
+                        print_line("User chose to stop monitoring.")
                         break
 
                 else:
-                    print("Target image found on screen, refreshing")
+                    print_line("Target image found on screen, refreshing")
                     pyautogui.press('f5')  # Press F5 to refresh
 
                 average_wait_seconds = int(self.config['Settings']['check_interval'])
                 min_value = int(average_wait_seconds * 0.7)
                 max_value = int(average_wait_seconds * 1.3)
                 interval = random.randint(min_value, max_value)  # Random interval between checks
-                print(f"Waiting for {interval} seconds")
+                print_line(f"Waiting for {interval} seconds")
                 time.sleep(interval)
 
             except KeyboardInterrupt:
-                print("\nMonitoring stopped by user")
+                print_line("\nMonitoring stopped by user")
                 break
             except Exception as exception:
-                print(f"An error occurred: {exception}")
+                print_line(f"An error occurred: {exception}")
                 raise exception
 
 if __name__ == "__main__":
@@ -156,4 +160,4 @@ if __name__ == "__main__":
         monitor = DesktopMonitor()
         monitor.monitor()
     except Exception as e:
-        print(f"Failed to start monitoring: {e}")
+        print_line(f"Failed to start monitoring: {e}")
