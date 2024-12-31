@@ -48,7 +48,7 @@ image_name = image1.png    # Name of the image file to monitor for
 mp3_name = for_elise_by_beethoven.mp3       # Name of the sound file to play when image disappears
 
 [Settings]
-check_interval = 30        # How often to check for the image (in seconds)
+check_interval = 30        # Average time to check for the image (in seconds)
 match_threshold = 0.8      # Image matching sensitivity (0.0 to 1.0)
 ```
 
