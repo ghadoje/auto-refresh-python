@@ -13,6 +13,8 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 import sys
 import random
 import time
+from src import windowHelper
+
 
 def print_line(message):
     print(time.strftime(f"%Y-%m-%d %H:%M:%S :: {message}"))
@@ -32,9 +34,10 @@ def load_config():
     config.read(config_path)
     return config
 
-def capture_screen():
+def capture_screen(window_name):
     """Capture the entire screen and convert to CV2 format"""
-    screenshot = ImageGrab.grab()
+    screenshot = windowHelper.grab_screenshot(window_name)
+    # screenshot = ImageGrab.grab()
     opencv_img = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
     return opencv_img
 
@@ -119,7 +122,7 @@ class DesktopMonitor:
 
         while True:
             try:
-                screen_img = capture_screen()
+                screen_img = capture_screen(self.config['Settings']['window_title_to_monitor'])
                 image_found = self.find_image(screen_img)
 
                 if not image_found:
