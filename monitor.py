@@ -140,6 +140,8 @@ class DesktopMonitor:
                 else:
                     print_line("Target image found on screen, refreshing")
                     pyautogui.press('f5')  # Press F5 to refresh
+                    if self.config.getboolean('Settings', 'notify_on_refresh'):
+                        show_toast_notification("Refreshed the screen.")
 
                 average_wait_seconds = int(self.config['Settings']['check_interval'])
                 min_value = int(average_wait_seconds * 0.7)
