@@ -101,6 +101,7 @@ class DesktopMonitor:
         
         # Get threshold from config
         threshold = float(self.config['Settings']['match_threshold'])
+        print_line(f"Image matched '{max_val}' percent on screen for threshold {threshold}")
         return max_val > threshold
     
     def play_music(self):
