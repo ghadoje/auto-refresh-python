@@ -9,7 +9,7 @@ import os
 import configparser
 import pyautogui
 from winotify import Notification, audio
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMessageBox, QPushButton
 import sys
 import random
 import time
@@ -38,7 +38,7 @@ def capture_screen():
     opencv_img = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
     return opencv_img
 
-def show_alert():
+def show_pop_up():
     app = QApplication.instance() or QApplication(sys.argv)
 
     msg = QMessageBox()
@@ -54,7 +54,20 @@ def show_alert():
         stop_music()
     if result == QMessageBox.StandardButton.No or result == QMessageBox.StandardButton.Yes:
         return result
-    return show_alert()
+    return show_pop_up()
+
+def show_app_mode_pop_up():
+    app = QApplication.instance() or QApplication(sys.argv)
+    msg = QMessageBox()
+    msg.setWindowTitle("Desktop Monitor")
+    msg.setText("Please select application mode!")
+    standardModeButton = msg.addButton("Standard", QMessageBox.ButtonRole.ActionRole)
+    aggressiveModeButton = msg.addButton("Agressive", QMessageBox.ButtonRole.ActionRole)
+    # msg.setStandardButtons(standardModeButton | aggressiveModeButton)
+    result = msg.exec()
+    if (msg.clickedButton() == standardModeButton):
+        return 'standard'
+    return 'aggressive'
 
 
 def show_toast_notification(message):
@@ -111,6 +124,9 @@ class DesktopMonitor:
 
     def monitor(self):
         """Main monitoring loop"""
+        print_line("Choose application mode")
+        appMode = show_app_mode_pop_up()
+        print_line(f"Selected application mode: {appMode}")
         print_line(f"Starting desktop monitoring. Looking for image: {self.target_image_path}")
         print_line(f"Will check every 10 to 20 seconds")
         
@@ -126,9 +142,12 @@ class DesktopMonitor:
                 if not image_found:
                     print_line("Target image not found! Playing alert...")
                     self.play_music()
+                    # if(appMode == 'agressive'):
+                        # click_acquire_button()
+                        
 
                     # Present a popup asking if the user wants to continue
-                    result = show_alert()
+                    result = show_pop_up()
                     if result == QMessageBox.StandardButton.Yes:  # User clicked "Yes"
                         print_line("User chose to continue monitoring.")
                         # Notify user and wait for 30 seconds before starting
