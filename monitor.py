@@ -86,7 +86,7 @@ class DesktopMonitor:
         pygame.mixer.init()
         
         # Load configuration
-        self.config = self.load_config()
+        self.config = load_config()
         
         # Set up paths
         self.project_dir = Path(__file__).parent
@@ -109,24 +109,7 @@ class DesktopMonitor:
         # Initialize Tesseract
         if os.name == 'nt':  # Windows
             pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-    
-    def load_config(self):
-        """Load configuration from config.ini"""
-        config = configparser.ConfigParser()
-        config_path = Path(__file__).parent / 'config.ini'
-        
-        if not config_path.exists():
-            raise FileNotFoundError(f"Configuration file not found at {config_path}")
-        
-        config.read(config_path)
-        return config
-    
-    def capture_screen(self):
-        """Capture the entire screen and convert to CV2 format"""
-        screenshot = ImageGrab.grab()
-        opencv_img = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-        return opencv_img
-    
+
     def find_image(self, screen_img):
         """Try to find the reference image in the screenshot"""
         # Use template matching to find the image
@@ -135,6 +118,7 @@ class DesktopMonitor:
         
         # Get threshold from config
         threshold = float(self.config['Settings']['match_threshold'])
+        print_line(f"Image matched '{max_val}' percent on screen for threshold {threshold}")
         return max_val > threshold
     
     def find_location_of_acquire_button(self, screen_img):
@@ -169,7 +153,7 @@ class DesktopMonitor:
         """Play the alert sound"""
         pygame.mixer.music.load(str(self.alert_sound_path))
         pygame.mixer.music.play()
-        
+
     def monitor(self):
         """Main monitoring loop"""
         print_line("Choose application mode")
@@ -179,15 +163,12 @@ class DesktopMonitor:
         print_line(f"Will check every 10 to 20 seconds")
         
         # Notify user and wait for 30 seconds before starting
-        toaster = win10toast.ToastNotifier()
-        toaster.show_toast("Desktop Monitor", "Will start monitoring in 30 seconds", duration=10)
+        show_toast_notification("Will start monitoring in 30 seconds")
         time.sleep(30)
-        toaster.show_toast("Desktop Monitor", "Started monitoring", duration=10)
-        alert_shown = False  # To track whether the alert has been shown recently
 
         while True:
             try:
-                screen_img = self.capture_screen()
+                screen_img = capture_screen()
                 image_found = self.find_image(screen_img)
 
                 if not image_found:
@@ -209,36 +190,28 @@ class DesktopMonitor:
                         break
 
                 else:
-                    print("Target image found on screen, refreshing")
+                    print_line("Target image found on screen, refreshing")
                     pyautogui.press('f5')  # Press F5 to refresh
-                    alert_shown = False  # Reset the alert flag since the image was found
+                    if self.config.getboolean('Settings', 'notify_on_refresh'):
+                        show_toast_notification("Refreshed the screen.")
 
-                interval = random.randint(10, 20)  # Random interval between checks
+                average_wait_seconds = int(self.config['Settings']['check_interval'])
+                min_value = int(average_wait_seconds * 0.7)
+                max_value = int(average_wait_seconds * 1.3)
+                interval = random.randint(min_value, max_value)  # Random interval between checks
+                print_line(f"Waiting for {interval} seconds")
                 time.sleep(interval)
 
             except KeyboardInterrupt:
-                print("\nMonitoring stopped by user")
+                print_line("\nMonitoring stopped by user")
                 break
-            except Exception as e:
-                print(f"An error occurred: {e}")
-                raise(e)
-    
-    def stop(self):
-        self.root.quit()  # Quit Tkinter when monitoring is stopped
-
-    def show_alert(self):
-        root = Tk() 
-        root.geometry("600x300") 
-        w = Label(root, text ='Python Auto Refresh', font = "50")  
-        w.pack() 
-        root.withdraw()
-        result = messagebox.askquestion("Desktop Monitor", "Target image not found! Do you want to continue monitoring?")
-        root.destroy()
-        return result
+            except Exception as exception:
+                print_line(f"An error occurred: {exception}")
+                raise exception
 
 if __name__ == "__main__":
     try:
         monitor = DesktopMonitor()
         monitor.monitor()
     except Exception as e:
-        print(f"Failed to start monitoring: {e}")
+        print_line(f"Failed to start monitoring: {e}")
