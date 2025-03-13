@@ -91,12 +91,16 @@ class DesktopMonitor:
         # Set up paths
         self.project_dir = Path(__file__).parent
         self.target_image_path = self.project_dir / self.config['Files']['image_name']
+        self.acquire_button_image_path = self.project_dir / self.config['Files']['acquire_button_image_name']
         self.alert_sound_path = self.project_dir / self.config['Files']['mp3_name']
         
         # Load the reference image
         self.reference_image = cv2.imread(str(self.target_image_path))
         if self.reference_image is None:
             raise FileNotFoundError(f"Reference image not found at {self.target_image_path}")
+        self.acuire_image = cv2.imread(str(self.acquire_button_image_path))
+        if self.acuire_image is None:
+            raise FileNotFoundError(f"Acuire button image not found at {self.acquire_button_image_path}")
             
         # Load the alert sound
         if not self.alert_sound_path.exists():
@@ -117,6 +121,34 @@ class DesktopMonitor:
         print_line(f"Image matched '{max_val}' percent on screen for threshold {threshold}")
         return max_val > threshold
     
+    def find_location_of_acquire_button(self, screen_img):
+        try:
+            result = cv2.matchTemplate(screen_img, self.acuire_image, cv2.TM_CCOEFF_NORMED)
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+            threshold = float(self.config['Settings']['match_threshold'])
+            if max_val >= threshold:
+                location = max_loc
+            else:
+                raise ValueError("Acquire button image not found on screen")
+            return location
+        except Exception as e:
+            print_line(f"Error finding location of acquire button: {e}")
+            return None
+    
+    def click_acquire_button(self, screen_img):
+        """Get Location of acquire button"""
+        location = self.find_location_of_acquire_button(screen_img)
+        """Click the acquire button on the screen"""
+        if location is not None:
+            x, y = location
+            x += 50 # Move to the center of the button
+            y += 20 # Move to the center of the button
+            pyautogui.moveTo(x, y, duration=0.7, tween=pyautogui.easeInOutQuad)
+            pyautogui.click(x, y)
+            print_line(f"Clicked acquire button at location {x}, {y}")
+        else:
+            print_line("Acquire button location not found")
+        
     def play_music(self):
         """Play the alert sound"""
         pygame.mixer.music.load(str(self.alert_sound_path))
@@ -142,9 +174,9 @@ class DesktopMonitor:
                 if not image_found:
                     print_line("Target image not found! Playing alert...")
                     self.play_music()
-                    # if(appMode == 'agressive'):
-                        # click_acquire_button()
-                        
+                    # Click on Acquire button if in aggressive mode
+                    if(appMode == 'aggressive'):
+                       self.click_acquire_button(screen_img)
 
                     # Present a popup asking if the user wants to continue
                     result = show_pop_up()
