@@ -172,7 +172,6 @@ class DesktopMonitor:
         appMode = show_app_mode_pop_up()
         print_line(f"Selected application mode: {appMode}")
         print_line(f"Starting desktop monitoring. Looking for image: {self.target_image_path}")
-        print_line(f"Will check every 10 to 20 seconds")
         
         # Notify user and wait for 30 seconds before starting
         show_toast_notification("Will start monitoring in 30 seconds")
