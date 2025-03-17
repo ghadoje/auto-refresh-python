@@ -123,7 +123,7 @@ class DesktopMonitor:
     
     def find_location_of_button(self, screen_img):
         try:
-            result = cv2.matchTemplate(screen_img, self.acuire_image, cv2.TM_CCOEFF_NORMED)
+            result = cv2.matchTemplate(screen_img, self.button_image_path, cv2.TM_CCOEFF_NORMED)
             min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
             threshold = float(self.config['Settings']['match_threshold'])
             if max_val >= threshold:
