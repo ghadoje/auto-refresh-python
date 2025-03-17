@@ -153,6 +153,18 @@ class DesktopMonitor:
         """Play the alert sound"""
         pygame.mixer.music.load(str(self.alert_sound_path))
         pygame.mixer.music.play()
+        
+    def random_wait(self):
+        average_wait_seconds = int(self.config['Settings']['check_interval'])
+        min_value = int(average_wait_seconds * 0.7)
+        max_value = int(average_wait_seconds * 1.3)
+        interval = random.randint(min_value, max_value)  # Random interval between checks
+        print_line(f"Waiting for {interval} seconds")
+        time.sleep(interval)
+    
+    def refresh_screen(self):
+        pyautogui.press('f5')  # Press F5 to refresh
+        time.sleep(10)
 
     def monitor(self):
         """Main monitoring loop"""
@@ -164,10 +176,11 @@ class DesktopMonitor:
         
         # Notify user and wait for 30 seconds before starting
         show_toast_notification("Will start monitoring in 30 seconds")
-        time.sleep(30)
 
         while True:
             try:
+                self.random_wait()
+                self.refresh_screen()  # Press F5 to refresh
                 screen_img = capture_screen()
                 image_found = self.find_image(screen_img)
 
@@ -191,16 +204,8 @@ class DesktopMonitor:
 
                 else:
                     print_line("Target image found on screen, refreshing")
-                    pyautogui.press('f5')  # Press F5 to refresh
                     if self.config.getboolean('Settings', 'notify_on_refresh'):
                         show_toast_notification("Refreshed the screen.")
-
-                average_wait_seconds = int(self.config['Settings']['check_interval'])
-                min_value = int(average_wait_seconds * 0.7)
-                max_value = int(average_wait_seconds * 1.3)
-                interval = random.randint(min_value, max_value)  # Random interval between checks
-                print_line(f"Waiting for {interval} seconds")
-                time.sleep(interval)
 
             except KeyboardInterrupt:
                 print_line("\nMonitoring stopped by user")
